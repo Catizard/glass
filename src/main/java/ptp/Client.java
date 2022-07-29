@@ -20,10 +20,10 @@ import java.lang.reflect.Proxy;
 import java.util.Random;
 
 public class Client {
-    private static Channel channel = null;
-    private static final Object LOCK = new Object();
-    private static int ClientID = 0;
-    private static int RequestID;
+    private Channel channel = null;
+    private final Object LOCK = new Object();
+    private int ClientID = 0;
+    private int RequestID;
 
     public Client() {
         Random random = new Random();
@@ -31,7 +31,7 @@ public class Client {
         RequestID = 0;
     }
 
-    public static <T> T getProxyService(Class<T> serviceClass) {
+    public <T> T getProxyService(Class<T> serviceClass) {
         //TODO gen ClientID;
         ClassLoader classLoader = serviceClass.getClassLoader();
         Class<?>[] interfaces = new Class[]{serviceClass};
@@ -61,7 +61,7 @@ public class Client {
         return (T)o;
     }
     
-    private static Channel getChannel() {
+    private Channel getChannel() {
         if (channel != null) {
             return channel;
         }
@@ -75,7 +75,7 @@ public class Client {
         }
     }
     
-    private static void initChannel() {
+    private void initChannel() {
         NioEventLoopGroup group = new NioEventLoopGroup();
         try {
             Bootstrap bootstrap = new Bootstrap();
@@ -98,7 +98,8 @@ public class Client {
     }
 
     public static void main(String[] args) {
-        HelloService helloService = (HelloService) getProxyService(HelloService.class);
+        Client client = new Client();
+        HelloService helloService = (HelloService) client.getProxyService(HelloService.class);
         String hello = helloService.hello("IT'S A MESSAGE");
         System.out.println(hello);
     }
