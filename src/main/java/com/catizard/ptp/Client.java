@@ -1,21 +1,15 @@
-package ptp;
+package com.catizard.ptp;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.concurrent.DefaultPromise;
-import ptp.Message.RPCRequestMessage;
-import ptp.services.HelloService;
+import com.catizard.ptp.Message.RPCRequestMessage;
+import com.catizard.ptp.services.HelloService;
 
-import javax.print.attribute.standard.RequestingUserName;
 import java.lang.reflect.Proxy;
 import java.util.Random;
 
@@ -27,12 +21,11 @@ public class Client {
 
     public Client() {
         Random random = new Random();
-        ClientID = random.nextInt();
+        ClientID = random.nextInt(Integer.MAX_VALUE);
         RequestID = 0;
     }
 
     public <T> T getProxyService(Class<T> serviceClass) {
-        //TODO gen ClientID;
         ClassLoader classLoader = serviceClass.getClassLoader();
         Class<?>[] interfaces = new Class[]{serviceClass};
         Object o = Proxy.newProxyInstance(classLoader, interfaces, (proxy, method, args) -> {
@@ -99,8 +92,9 @@ public class Client {
 
     public static void main(String[] args) {
         Client client = new Client();
+//        System.out.println(client.ClientID);
         HelloService helloService = (HelloService) client.getProxyService(HelloService.class);
-        String hello = helloService.hello("IT'S A MESSAGE");
+        String hello = helloService.hello("World!");
         System.out.println(hello);
     }
 }

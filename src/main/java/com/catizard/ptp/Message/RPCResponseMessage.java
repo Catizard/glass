@@ -1,6 +1,6 @@
-package ptp.Message;
+package com.catizard.ptp.Message;
 
-import ptp.RequestIdentify;
+import com.catizard.ptp.RequestIdentify;
 
 public class RPCResponseMessage extends Message {
     private Object returnValue;
@@ -42,6 +42,7 @@ public class RPCResponseMessage extends Message {
         return "RPCResponseMessage{" +
                 "returnValue=" + returnValue +
                 ", exceptionValue=" + exceptionValue +
+                ", requestIdentify=" + requestIdentify +
                 '}';
     }
 }

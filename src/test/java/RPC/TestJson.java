@@ -2,8 +2,7 @@ package RPC;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ptp.Message.Message;
-import ptp.Message.RPCRequestMessage;
+import com.catizard.ptp.Message.RPCRequestMessage;
 
 public class TestJson {
     public static void main(String[] args) throws JsonProcessingException {

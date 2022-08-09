@@ -1,8 +1,5 @@
-package ptp.services;
-
-
-import Config.Config;
-
+package com.catizard.ptp.services;
+import com.catizard.ptp.Config.Config;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;

@@ -1,8 +1,8 @@
 package RPC;
 
-import ptp.Message.RPCRequestMessage;
-import ptp.services.HelloService;
-import ptp.services.ServicesFactory;
+import com.catizard.ptp.Message.RPCRequestMessage;
+import com.catizard.ptp.services.HelloService;
+import com.catizard.ptp.services.ServicesFactory;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

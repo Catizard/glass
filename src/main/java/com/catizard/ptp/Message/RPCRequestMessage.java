@@ -1,6 +1,6 @@
-package ptp.Message;
+package com.catizard.ptp.Message;
 
-import ptp.RequestIdentify;
+import com.catizard.ptp.RequestIdentify;
 
 import java.util.Arrays;
 

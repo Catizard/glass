@@ -1,4 +1,4 @@
-package ptp.Message;
+package com.catizard.ptp.Message;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -20,8 +20,8 @@ public abstract class Message implements Serializable {
     public static final int RPCResponseMessage = 1;
     
     static {
-        messageClasses.put(RPCRequestMessage, ptp.Message.RPCRequestMessage.class);
-        messageClasses.put(RPCResponseMessage, ptp.Message.RPCResponseMessage.class);
+        messageClasses.put(RPCRequestMessage, com.catizard.ptp.Message.RPCRequestMessage.class);
+        messageClasses.put(RPCResponseMessage, com.catizard.ptp.Message.RPCResponseMessage.class);
     }
     
 }

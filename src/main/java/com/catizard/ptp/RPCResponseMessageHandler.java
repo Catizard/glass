@@ -1,9 +1,9 @@
-package ptp;
+package com.catizard.ptp;
 
+import com.catizard.ptp.Message.RPCResponseMessage;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Promise;
-import ptp.Message.RPCResponseMessage;
 
 import java.util.HashMap;
 import java.util.Map;
