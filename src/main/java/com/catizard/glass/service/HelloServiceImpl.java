@@ -13,5 +13,7 @@ public class HelloServiceImpl implements HelloService {
         HelloService helloService = new HelloServiceImpl();
         RPCService rpcService = HelloServiceImpl.class.getAnnotation(RPCService.class);
         System.out.println(rpcService.value());
+        rpcService = HelloService.class.getAnnotation(RPCService.class);
+        System.out.println(rpcService.value());
     }
 }
