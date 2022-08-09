@@ -1,5 +1,7 @@
 package com.catizard.glass.message;
 
+import com.catizard.glass.utils.RequestIdentify;
+
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;

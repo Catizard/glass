@@ -5,7 +5,7 @@ import com.catizard.glass.utils.InetAddress;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-public class ServiceRegisterRequestHandler extends SimpleChannelInboundHandler<RegisterServiceRequestMessage> {
+public class RegisterServiceRequestMessageHandler extends SimpleChannelInboundHandler<RegisterServiceRequestMessage> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, RegisterServiceRequestMessage msg) throws Exception {
         System.out.println("[Center] received register request message [" + msg + "]");

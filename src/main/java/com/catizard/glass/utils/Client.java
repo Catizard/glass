@@ -54,7 +54,6 @@ public abstract class Client {
     
     public void sendMessage(Message message) {
         getChannel().writeAndFlush(message);
-        System.out.println("[Client] send message");
     }
     
     public abstract InetAddress getInetAddress();

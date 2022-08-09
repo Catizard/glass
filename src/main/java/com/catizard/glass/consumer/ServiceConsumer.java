@@ -2,16 +2,19 @@ package com.catizard.glass.consumer;
 
 import com.catizard.glass.message.FetchServiceRequestMessage;
 import com.catizard.glass.message.MessageCodec;
-import com.catizard.glass.utils.Client;
-import com.catizard.glass.utils.InetAddress;
+import com.catizard.glass.utils.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.util.concurrent.DefaultPromise;
+import io.netty.util.concurrent.Promise;
 
 import java.util.ArrayList;
 
 public class ServiceConsumer {
     static class FetchClient extends Client {
         private InetAddress ip;
+        private final int clientId = (RandomGenerator.random.nextInt(Integer.MAX_VALUE));
+        private int requestId = 0;
         public FetchClient(InetAddress ip) {
             this.ip = ip;
         }
@@ -25,14 +28,23 @@ public class ServiceConsumer {
         public void initChannel(SocketChannel ch) {
             ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(1024, 4, 4, 0, 0));
             ch.pipeline().addLast(new MessageCodec());
-            //ch.pipeline().addLast(new FetchServicesResponseMessageHandler());
+            ch.pipeline().addLast(new FetchServiceResponseMessageHandler());
         }
         
-        public ArrayList<InetAddress> sendFetchRequestMessage(String serviceName) {
-            FetchServiceRequestMessage message = new FetchServiceRequestMessage(serviceName);
+        public InetAddress sendFetchRequestMessage(String serviceName) throws InterruptedException {
+            requestId++;
+            RequestIdentify id = new RequestIdentify(clientId, requestId);
+            FetchServiceRequestMessage message = new FetchServiceRequestMessage(serviceName, id);
+            System.out.println("[Consumer] send fetch message [" + message + "]");
             super.sendMessage(message);
-            //TODO handle response message
-            return new ArrayList<>();
+            DefaultPromise<Object> promise = new DefaultPromise<>(getChannel().eventLoop());
+            RequestPromiseChannel.waitCh.put(id, promise);
+            promise.await();
+            if (promise.isSuccess()) {
+                return (InetAddress) promise.getNow();
+            } else {
+                throw new RuntimeException(promise.cause());
+            }
         }
     }
     
@@ -44,12 +56,13 @@ public class ServiceConsumer {
         this.fetcher = new FetchClient(centerAddress);
     }
     
-    public void fetchService(String serviceName) {
-        fetcher.sendFetchRequestMessage(serviceName);
+    public InetAddress fetchService(String serviceName) throws InterruptedException {
+        return fetcher.sendFetchRequestMessage(serviceName);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         ServiceConsumer serviceConsumer = new ServiceConsumer(new InetAddress("localhost", 8080));
-        serviceConsumer.fetchService("HelloService");
+        InetAddress address = serviceConsumer.fetchService("HelloService");
+        System.out.println(address);
     }
 }

@@ -6,7 +6,6 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
@@ -29,8 +28,8 @@ public class RegisterServiceCenter {
                 protected void initChannel(NioSocketChannel ch) throws Exception {
                     ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(1024, 4, 4, 0, 0));
                     ch.pipeline().addLast(new MessageCodec());
-                    ch.pipeline().addLast(new ServiceRegisterRequestHandler());
-                    ch.pipeline().addLast(new ServiceFetchRequestHandler());
+                    ch.pipeline().addLast(new RegisterServiceRequestMessageHandler());
+                    ch.pipeline().addLast(new FetchServiceRequestMessageHandler());
                 }
             });
             Channel channel = serverBootstrap.bind(8080).sync().channel();
