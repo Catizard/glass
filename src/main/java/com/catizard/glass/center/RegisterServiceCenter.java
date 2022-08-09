@@ -30,6 +30,7 @@ public class RegisterServiceCenter {
                     ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(1024, 4, 4, 0, 0));
                     ch.pipeline().addLast(new MessageCodec());
                     ch.pipeline().addLast(new ServiceRegisterRequestHandler());
+                    ch.pipeline().addLast(new ServiceFetchRequestHandler());
                 }
             });
             Channel channel = serverBootstrap.bind(8080).sync().channel();

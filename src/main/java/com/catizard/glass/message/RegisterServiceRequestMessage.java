@@ -2,14 +2,14 @@ package com.catizard.glass.message;
 
 import com.catizard.glass.utils.InetAddress;
 
-public class ServiceRegisterRequestMessage extends Message {
+public class RegisterServiceRequestMessage extends Message {
     private String serviceName;
     private InetAddress serviceAddress;
     
-    public ServiceRegisterRequestMessage() {
+    public RegisterServiceRequestMessage() {
     }
 
-    public ServiceRegisterRequestMessage(String serviceName, String inetHost, int inetPort) {
+    public RegisterServiceRequestMessage(String serviceName, String inetHost, int inetPort) {
         this.serviceName = serviceName;
         this.serviceAddress = new InetAddress(inetHost, inetPort);
     }
@@ -40,6 +40,6 @@ public class ServiceRegisterRequestMessage extends Message {
 
     @Override
     public int getMessageType() {
-        return ServiceRegisterRequestMessage;
+        return RegisterServiceRequestMessage;
     }
 }

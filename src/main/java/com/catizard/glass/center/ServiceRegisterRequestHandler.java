@@ -1,13 +1,13 @@
 package com.catizard.glass.center;
 
-import com.catizard.glass.message.ServiceRegisterRequestMessage;
+import com.catizard.glass.message.RegisterServiceRequestMessage;
 import com.catizard.glass.utils.InetAddress;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-public class ServiceRegisterRequestHandler extends SimpleChannelInboundHandler<ServiceRegisterRequestMessage> {
+public class ServiceRegisterRequestHandler extends SimpleChannelInboundHandler<RegisterServiceRequestMessage> {
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, ServiceRegisterRequestMessage msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, RegisterServiceRequestMessage msg) throws Exception {
         System.out.println("[Center] received register request message [" + msg + "]");
         try {
             String serviceName = msg.getServiceName();
