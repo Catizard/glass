@@ -16,7 +16,7 @@ public class FetchServiceRequestMessageHandler extends SimpleChannelInboundHandl
             System.out.println("[Center] fetched service name is " + serviceName + " and the result is " + RegisterServiceCenter.registeredServices.get(serviceName));
             RequestIdentify id = msg.getId();
             
-            responseMessage.setAddress(RegisterServiceCenter.registeredServices.get(serviceName));
+            responseMessage.setAddressList(RegisterServiceCenter.registeredServices.get(serviceName));
             responseMessage.setId(id);
         } catch (Exception e) {
             e.printStackTrace();

@@ -3,20 +3,22 @@ package com.catizard.glass.message;
 import com.catizard.glass.utils.InetAddress;
 import com.catizard.glass.utils.RequestIdentify;
 
+import java.util.List;
+
 public class FetchServiceResponseMessage extends Message {
-    private InetAddress address;
+    private List<InetAddress> addressList;
     private RequestIdentify id;
     private Exception exceptionValue;
 
     public FetchServiceResponseMessage() {
     }
 
-    public InetAddress getAddress() {
-        return address;
+    public List<InetAddress> getAddressList() {
+        return addressList;
     }
 
-    public void setAddress(InetAddress address) {
-        this.address = address;
+    public void setAddressList(List<InetAddress> addressList) {
+        this.addressList = addressList;
     }
 
     public RequestIdentify getId() {
@@ -43,7 +45,7 @@ public class FetchServiceResponseMessage extends Message {
     @Override
     public String toString() {
         return "FetchServiceResponseMessage{" +
-                "address=" + address +
+                "addressList=" + addressList +
                 ", id=" + id +
                 ", exceptionValue=" + exceptionValue +
                 '}';

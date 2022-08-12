@@ -47,7 +47,9 @@ public class ServiceProvider {
         this.listenAddress = listenAddress;
         this.centerAddress = centerAddress;
         this.register = new RegisterClient(centerAddress);
-        scanAndRegister(listenAddress, packNames);
+        for (String packName : packNames) {
+            scanAndRegister(listenAddress, packName);
+        }
         this.server = new Thread(new ProviderServer(listenAddress, "provider server"));
         this.server.start();
     }
@@ -68,20 +70,18 @@ public class ServiceProvider {
         this.listenAddress = listenAddress;
     }
 
-    public void scanAndRegister(InetAddress listenAddress, String[] packNames) {
-        for (String packName : packNames) {
-            List<Class<?>> classList = AnnotationScanner.scan(packName, RPCService.class);
-            for (Class<?> clz : classList) {
-                if (!clz.isInterface()) {
-                    String serviceName = clz.getAnnotation(RPCService.class).value();
-                    registerService(serviceName, listenAddress);
-                    try {
-                        ServicesFactory.setService(serviceName, clz.newInstance());
-                    } catch (InstantiationException | IllegalAccessException e) {
-                        throw new RuntimeException(e);
-                    }
+    public void scanAndRegister(InetAddress listenAddress, String packName) {
+        List<Class<?>> classList = AnnotationScanner.scan(packName, RPCService.class);
+        for (Class<?> clz : classList) {
+            if (!clz.isInterface()) {
+                String serviceName = clz.getAnnotation(RPCService.class).value();
+                registerService(serviceName, listenAddress);
+                try {
+                    ServicesFactory.setService(serviceName, clz.newInstance());
+                } catch (InstantiationException | IllegalAccessException e) {
+                    throw new RuntimeException(e);
                 }
-            }    
+            }
         }
     }
     

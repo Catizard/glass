@@ -11,6 +11,7 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.util.concurrent.DefaultPromise;
 
 import java.lang.reflect.Proxy;
+import java.util.concurrent.TimeUnit;
 
 public class ServiceConsumer {
     static class FetchClient extends Client {
@@ -41,7 +42,7 @@ public class ServiceConsumer {
             super.sendMessage(message);
             DefaultPromise<Object> promise = new DefaultPromise<>(getChannel().eventLoop());
             RequestPromiseChannel.waitCh.put(id, promise);
-            promise.await();
+            promise.await(TimeUnit.SECONDS.toMillis(2));
             if (promise.isSuccess()) {
                 return (InetAddress) promise.getNow();
             } else {
@@ -118,6 +119,9 @@ public class ServiceConsumer {
     public <T> T getProxyService(Class<T> clz) throws InterruptedException {
         String serviceName = clz.getAnnotation(RPCService.class).value();
         InetAddress serviceAddress = fetchService(serviceName);
+        if (serviceAddress == null) {
+            return null;
+        }
         return rpcClient.getProxyService(serviceAddress, clz);
     }
 

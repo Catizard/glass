@@ -12,10 +12,11 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class RegisterServiceCenter {
-    public static Map<String, InetAddress> registeredServices = new HashMap<>();
+    public static Map<String, List<InetAddress>> registeredServices = new HashMap<>();
     private static class RegisterServer extends Server {
         public RegisterServer(InetAddress address, String name) {
             super(address, name);
