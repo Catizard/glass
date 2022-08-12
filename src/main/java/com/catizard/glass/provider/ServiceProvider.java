@@ -4,6 +4,7 @@ import com.catizard.glass.message.MessageCodec;
 import com.catizard.glass.message.RegisterServiceRequestMessage;
 import com.catizard.glass.utils.Client;
 import com.catizard.glass.utils.InetAddress;
+import com.catizard.glass.utils.Server;
 import com.sun.corba.se.internal.CosNaming.BootstrapServer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -52,38 +53,22 @@ public class ServiceProvider {
         register.sendRegisterMessage(serviceName, serviceAddress);
     }
 
-    public static void main(String[] args) {
-        //TODO make an abstraction of server side
-        
-        new Thread(() -> {
-            NioEventLoopGroup boss = new NioEventLoopGroup();
-            NioEventLoopGroup worker = new NioEventLoopGroup();
+    private static class ProviderServer extends Server {
+        public ProviderServer(InetAddress address, String name) {
+            super(address, name);
+        }
 
-            try {
-                ServerBootstrap serverBootstrap = new ServerBootstrap();
-                serverBootstrap.channel(NioServerSocketChannel.class);
-                serverBootstrap.group(boss, worker);
-                serverBootstrap.childHandler(new ChannelInitializer<NioSocketChannel>() {
-                    @Override
-                    protected void initChannel(NioSocketChannel ch) throws Exception {
-                        ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(1024, 4, 4, 0, 0));
-                        ch.pipeline().addLast(new MessageCodec());
-                        ch.pipeline().addLast(new RPCRequestMessageHandler());
-                    }
-                });
-                System.out.println("[provider] listen to 9090");
-                //TODO provider port, only for test
-                Channel channel = serverBootstrap.bind("localhost", 9090).sync().channel();
-                channel.closeFuture().sync();
-                System.out.println("service provider shutdown");
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                boss.shutdownGracefully();
-                worker.shutdownGracefully();
-            }
-        }).start();
-        
+        @Override
+        public void initChannel(NioSocketChannel ch) throws Exception {
+            ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(1024, 4, 4, 0, 0));
+            ch.pipeline().addLast(new MessageCodec());
+            ch.pipeline().addLast(new RPCRequestMessageHandler());
+        }
+    }
+    
+    public static void main(String[] args) {
+        ProviderServer server = new ProviderServer(new InetAddress("localhost", 9090), "provider server");
+        new Thread(server).start();
         ServiceProvider serviceProvider = new ServiceProvider(new InetAddress("localhost", 8080));
         serviceProvider.registerService("HelloService", new InetAddress("localhost", 9090));
     }
