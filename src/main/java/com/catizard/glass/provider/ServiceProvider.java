@@ -44,7 +44,6 @@ public class ServiceProvider {
             super.sendMessage(message);
         }
     }
-    //TODO ServiceProvider should automatically scan all the services and register them
     private InetAddress centerAddress;
     private final RegisterClient register;
     
@@ -70,15 +69,17 @@ public class ServiceProvider {
         }
     }
     
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InstantiationException, IllegalAccessException {
         ProviderServer server = new ProviderServer(new InetAddress("localhost", 9090), "provider server");
         new Thread(server).start();
         
         InetAddress selfAddress = new InetAddress("localhost", 9090);
         ServiceProvider serviceProvider = new ServiceProvider(new InetAddress("localhost", 8080));
-        List<RPCService> annotationList = AnnotationScanner.scan("com.catizard.glass.service", RPCService.class);
-        for (RPCService rpcService : annotationList) {
-            serviceProvider.registerService(rpcService.value(), selfAddress);
+        List<Class<?>> classList = AnnotationScanner.scan("com.catizard.glass.service", RPCService.class);
+        for (Class<?> clz : classList) {
+            if (!clz.isInterface()) {
+                ServicesFactory.setService(clz.getAnnotation(RPCService.class).value(), clz.newInstance());
+            }
         }
     }
 }

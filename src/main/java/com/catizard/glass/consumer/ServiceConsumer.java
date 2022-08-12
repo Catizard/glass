@@ -115,11 +115,16 @@ public class ServiceConsumer {
         return fetchClient.sendFetchRequestMessage(serviceName);
     }
 
+    public <T> T getProxyService(Class<T> clz) throws InterruptedException {
+        String serviceName = clz.getAnnotation(RPCService.class).value();
+        InetAddress serviceAddress = fetchService(serviceName);
+        return rpcClient.getProxyService(serviceAddress, clz);
+    }
+
     public static void main(String[] args) throws InterruptedException {
         ServiceConsumer serviceConsumer = new ServiceConsumer(new InetAddress("localhost", 8080));
-        InetAddress helloServiceAddress = serviceConsumer.fetchService("HelloService");
-        
-        HelloService helloService = serviceConsumer.rpcClient.getProxyService(helloServiceAddress, HelloService.class);
-        System.out.println(helloService.sayHello("world!"));
+        HelloService helloservice = serviceConsumer.getProxyService(HelloService.class);
+        String result = helloservice.sayHello("world!");
+        System.out.println(result);
     }
 }
