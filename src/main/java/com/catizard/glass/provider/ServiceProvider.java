@@ -7,13 +7,7 @@ import com.catizard.glass.utils.AnnotationScanner;
 import com.catizard.glass.utils.Client;
 import com.catizard.glass.utils.InetAddress;
 import com.catizard.glass.utils.Server;
-import com.sun.corba.se.internal.CosNaming.BootstrapServer;
-import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
@@ -45,13 +39,56 @@ public class ServiceProvider {
         }
     }
     private InetAddress centerAddress;
+    private InetAddress listenAddress;
     private final RegisterClient register;
+    private Thread server;
     
-    public ServiceProvider(InetAddress centerAddress) {
+    public ServiceProvider(InetAddress listenAddress, InetAddress centerAddress, String... packNames) {
+        this.listenAddress = listenAddress;
         this.centerAddress = centerAddress;
         this.register = new RegisterClient(centerAddress);
+        scanAndRegister(listenAddress, packNames);
+        this.server = new Thread(new ProviderServer(listenAddress, "provider server"));
+        this.server.start();
+    }
+
+    public InetAddress getCenterAddress() {
+        return centerAddress;
+    }
+
+    public void setCenterAddress(InetAddress centerAddress) {
+        this.centerAddress = centerAddress;
+    }
+
+    public InetAddress getListenAddress() {
+        return listenAddress;
+    }
+
+    public void setListenAddress(InetAddress listenAddress) {
+        this.listenAddress = listenAddress;
+    }
+
+    public void scanAndRegister(InetAddress listenAddress, String[] packNames) {
+        for (String packName : packNames) {
+            List<Class<?>> classList = AnnotationScanner.scan(packName, RPCService.class);
+            for (Class<?> clz : classList) {
+                if (!clz.isInterface()) {
+                    String serviceName = clz.getAnnotation(RPCService.class).value();
+                    registerService(serviceName, listenAddress);
+                    try {
+                        ServicesFactory.setService(serviceName, clz.newInstance());
+                    } catch (InstantiationException | IllegalAccessException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }    
+        }
     }
     
+    public void close() {
+        this.server.interrupt();
+    }
+
     public void registerService(String serviceName, InetAddress serviceAddress) {
         register.sendRegisterMessage(serviceName, serviceAddress);
     }
@@ -70,16 +107,11 @@ public class ServiceProvider {
     }
     
     public static void main(String[] args) throws InstantiationException, IllegalAccessException {
-        ProviderServer server = new ProviderServer(new InetAddress("localhost", 9090), "provider server");
-        new Thread(server).start();
-        
         InetAddress selfAddress = new InetAddress("localhost", 9090);
-        ServiceProvider serviceProvider = new ServiceProvider(new InetAddress("localhost", 8080));
-        List<Class<?>> classList = AnnotationScanner.scan("com.catizard.glass.service", RPCService.class);
-        for (Class<?> clz : classList) {
-            if (!clz.isInterface()) {
-                ServicesFactory.setService(clz.getAnnotation(RPCService.class).value(), clz.newInstance());
-            }
-        }
+        InetAddress centerAddress = new InetAddress("localhost", 8080);
+        //run server listen to port 9090
+        
+        ServiceProvider serviceProvider = new ServiceProvider(selfAddress, centerAddress, "com.catizard.glass.service");
+//        serviceProvider.close();
     }
 }
