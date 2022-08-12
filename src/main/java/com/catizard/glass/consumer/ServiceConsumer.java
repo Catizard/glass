@@ -118,7 +118,6 @@ public class ServiceConsumer {
     public static void main(String[] args) throws InterruptedException {
         ServiceConsumer serviceConsumer = new ServiceConsumer(new InetAddress("localhost", 8080));
         InetAddress helloServiceAddress = serviceConsumer.fetchService("HelloService");
-        
         HelloService helloService = serviceConsumer.rpcClient.getProxyService(helloServiceAddress, HelloService.class);
         System.out.println(helloService.sayHello("world!"));
     }

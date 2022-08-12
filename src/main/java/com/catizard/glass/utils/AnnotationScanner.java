@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Objects;
 
 public class AnnotationScanner {
-    private static <A extends Annotation> void doFile(File file, Class<A> targetClass, List<A> annotationList, String classpath) {
+    private static <A extends Annotation> void doFile(File file, Class<A> targetClass, List<Class<?>> annotationList, String classpath) {
         if (file.isDirectory()) {
             File[] files = file.listFiles();
             assert files != null;
@@ -22,9 +22,8 @@ public class AnnotationScanner {
                     replace(".class", "");
             try {
                 Class<?> clz = Class.forName(className);
-                A annotation = clz.getAnnotation(targetClass);
-                if (annotation != null) {
-                    annotationList.add(annotation);
+                if (clz.getAnnotation(targetClass) != null) {
+                    annotationList.add(clz);
                 }
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
@@ -32,20 +31,17 @@ public class AnnotationScanner {
         }
     }
     
-    public static <A extends Annotation> List<A> scan(String packName, Class<A> targetClass) {
-        List<A> annotationList = new ArrayList<>();
+    public static <A extends Annotation> List<Class<?>> scan(String packName, Class<A> targetClass) {
+        List<Class<?>> classList = new ArrayList<>();
         packName = packName.replace(".", File.separator);
         String classpath = Objects.requireNonNull(AnnotationScanner.class.getResource("/")).getPath();
         File file = new File(classpath + packName);
-        doFile(file, targetClass, annotationList, classpath);
-        return annotationList;
+        doFile(file, targetClass, classList, classpath);
+        return classList;
     }
 
     public static void main(String[] args) {
-        List<RPCService> annotationList = scan("com.catizard.glass.service", RPCService.class);
-        System.out.println(annotationList);
-        for (RPCService rpcService : annotationList) {
-            System.out.println(rpcService.value());
-        }
+        List<Class<?>> classList = scan("com.catizard.glass.service", RPCService.class);
+        System.out.println(classList);
     }
 }
