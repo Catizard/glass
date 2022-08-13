@@ -29,6 +29,14 @@ public class InetAddress {
     }
 
     @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof InetAddress)) {
+            return false;
+        }
+        return inetHost.equals(((InetAddress) obj).inetHost) && inetPort == ((InetAddress) obj).inetPort;
+    }
+
+    @Override
     public String toString() {
         return "InetAddress{" +
                 "inetHost='" + inetHost + '\'' +

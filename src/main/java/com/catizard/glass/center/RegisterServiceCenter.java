@@ -1,13 +1,16 @@
 package com.catizard.glass.center;
 
+import com.catizard.glass.message.HeartbeatRequestMessage;
 import com.catizard.glass.message.MessageCodec;
 import com.catizard.glass.utils.Client;
 import com.catizard.glass.utils.InetAddress;
+import com.catizard.glass.utils.RequestIdentify;
 import com.catizard.glass.utils.Server;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
@@ -52,18 +55,36 @@ public class RegisterServiceCenter {
             ch.pipeline().addLast(new FetchServiceRequestMessageHandler());
         }
     }
+    private static class HeartbeatClient extends Client {
+        private InetAddress address;
+        @Override
+        public void initChannel(SocketChannel ch) {
+            ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(1024, 4, 4, 0, 0));
+            ch.pipeline().addLast(new MessageCodec());
+            //ch.pipeline().addLast(new HeartbeatResponseMessageHandler());
+        }
+    }
     private static class HeartBeatHelper implements Runnable {
         @Override
         public void run() {
+            HeartbeatClient heartbeatClient = new HeartbeatClient();
             while (true) {
                 try {
-                    for (Map.Entry<String, List<InetAddress>> entry : registeredServices.entrySet()) {
-                        List<InetAddress> value = entry.getValue();
-                        for (InetAddress address : value) {
-                            
+                    for (Map.Entry<InetAddress, Boolean> entry : registeredAddresses.entrySet()) {
+                        InetAddress address = entry.getKey();
+                        try {
+                            if (!address.equals(heartbeatClient.address)) {
+                                heartbeatClient.connect(address);
+                            }
+                            HeartbeatRequestMessage heartbeatRequestMessage = new HeartbeatRequestMessage(new RequestIdentify(heartbeatClient.getClientId(), heartbeatClient.getRequestId()));
+                            heartbeatClient.getChannel().writeAndFlush(heartbeatRequestMessage);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            //TODO if a remote address couldn't receive heartbeat too many times, remove it
+                            System.out.println("heartclient connected to " + address + " failed");
                         }
                     }
-                    TimeUnit.SECONDS.sleep(1);
+                    TimeUnit.SECONDS.sleep(5);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }

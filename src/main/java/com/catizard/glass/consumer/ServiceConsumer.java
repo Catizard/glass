@@ -53,7 +53,13 @@ public class ServiceConsumer {
         public <T> T getProxyService(InetAddress remoteAddress, Class<T> serviceClass) {
             if (!remoteAddress.equals(address)) {
                 //reconnect to remote address
-                connect(remoteAddress);
+                try {
+                    connect(remoteAddress);
+                } catch (InterruptedException e) {
+                    //TODO should send a message to center
+                    System.out.println("cannot connect to remote address");
+                    throw new RuntimeException(e);
+                }
             }
             //send this to the assigned address
             ClassLoader classLoader = serviceClass.getClassLoader();

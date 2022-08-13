@@ -22,6 +22,8 @@ public abstract class Message implements Serializable {
     public static final int FetchServiceResponseMessage = 2;
     public static final int RPCRequestMessage = 3;
     public static final int RPCResponseMessage = 4; 
+    public static final int HeartbeatRequestMessage = 5;
+    public static final int HeartbeatResponseMessage = 6;
     
     static {
         messageClasses.put(RegisterServiceRequestMessage, com.catizard.glass.message.RegisterServiceRequestMessage.class);
@@ -29,5 +31,7 @@ public abstract class Message implements Serializable {
         messageClasses.put(FetchServiceResponseMessage, com.catizard.glass.message.FetchServiceResponseMessage.class);
         messageClasses.put(RPCRequestMessage, com.catizard.glass.message.RPCRequestMessage.class);
         messageClasses.put(RPCResponseMessage, com.catizard.glass.message.RPCResponseMessage.class);
+        messageClasses.put(HeartbeatRequestMessage, com.catizard.glass.message.HeartbeatRequestMessage.class);
+        messageClasses.put(HeartbeatResponseMessage, HeartbeatResponseMessage.class);
     }
 }

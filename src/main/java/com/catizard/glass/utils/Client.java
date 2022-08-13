@@ -77,15 +77,11 @@ public abstract class Client {
         }
     }
     
-    public void connect(InetAddress address) {
+    public void connect(InetAddress address) throws InterruptedException {
         if (bootstrap == null) {
             throw new RuntimeException("called connect before init client");
         }
-        try {
-            channel = bootstrap.connect(address.getInetHost(), address.getInetPort()).sync().channel();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        channel = bootstrap.connect(address.getInetHost(), address.getInetPort()).sync().channel();
     }
 
     public abstract void initChannel(SocketChannel ch);

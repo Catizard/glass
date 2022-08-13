@@ -95,6 +95,7 @@ public class ServiceProvider {
             ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(1024, 4, 4, 0, 0));
             ch.pipeline().addLast(new MessageCodec());
             ch.pipeline().addLast(new RPCRequestMessageHandler());
+            ch.pipeline().addLast(new HeartbeatRequestMessageHandler());
         }
     }
     
