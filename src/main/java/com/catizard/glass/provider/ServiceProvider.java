@@ -15,27 +15,19 @@ import java.util.List;
 
 public class ServiceProvider {
     static class RegisterClient extends Client {
-        private InetAddress ip;
-
-        public RegisterClient(InetAddress ip) {
-            this.ip = ip;
-        }
-
-        @Override
-        public InetAddress getInetAddress() {
-            return ip;
+        public RegisterClient(InetAddress address) {
+            super(address);
         }
 
         @Override
         public void initChannel(SocketChannel ch) {
-            System.out.println("[ServiceRegister] called child's initChannel()");
             ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(1024, 4, 4, 0, 0));
             ch.pipeline().addLast(new MessageCodec());
         }
 
         public void sendRegisterMessage(String serviceName, InetAddress serviceAddress) {
             RegisterServiceRequestMessage message = new RegisterServiceRequestMessage(serviceName, serviceAddress.getInetHost(), serviceAddress.getInetPort());
-            super.sendMessage(message);
+            getChannel().writeAndFlush(message);
         }
     }
     private InetAddress centerAddress;

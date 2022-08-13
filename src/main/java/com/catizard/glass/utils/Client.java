@@ -12,51 +12,81 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
 public abstract class Client {
-    private Channel channel = null;
-    private final Object LOCK = new Object();
-    
-    public Channel getChannel() {
-        if (channel != null) {
-            return channel;
-        }
-        
-        synchronized (LOCK) {
-            if (channel != null) {
-                return channel;
-            }
-            
-            initChannel();
-            return channel;
-        }
+    private NioEventLoopGroup group = null;
+    private Bootstrap bootstrap;
+    private Channel channel;
+    private int clientId;
+    private int requestId = 0;
+
+    public int getClientId() {
+        return clientId;
+    }
+
+    public int getRequestId() {
+        int result = requestId;
+        requestId++;
+        return result;
     }
     
-    private void initChannel() {
-        NioEventLoopGroup group = new NioEventLoopGroup();
+
+    private void setup() {
+        //set up client
         try {
-            Bootstrap bootstrap = new Bootstrap();
-            bootstrap.channel(NioSocketChannel.class);
+            group = new NioEventLoopGroup();
+            bootstrap = new Bootstrap();
             bootstrap.group(group);
+            bootstrap.channel(NioSocketChannel.class);
             bootstrap.handler(new ChannelInitializer<SocketChannel>() {
                 @Override
                 protected void initChannel(SocketChannel ch) throws Exception {
                     Client.this.initChannel(ch);
                 }
             });
-            InetAddress ip = getInetAddress();
-            System.out.println("[Client] connect to ip {" + ip.getInetHost() + ":" + ip.getInetPort() + "}");
-            channel = bootstrap.connect(ip.getInetHost(), ip.getInetPort()).sync().channel();
-            channel.closeFuture().addListener(future -> group.shutdownGracefully());
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("client error");
+        }
+
+        //set up some variables
+        clientId = RandomGenerator.random.nextInt(Integer.MAX_VALUE);
+        requestId = 0;
+        System.out.println("a new Client set up, client id is " + clientId + " request id is " + requestId);
+    }
+    public Client() {
+        setup();
+    }
+    
+    public Client(InetAddress address) {
+        setup();
+        try {
+            channel = bootstrap.connect(address.getInetHost(), address.getInetPort()).sync().channel();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
     
-    public void sendMessage(Message message) {
-        getChannel().writeAndFlush(message);
+    public Channel getChannel() {
+        if (channel == null) {
+            throw new RuntimeException("Client didn't connect to any Server!");
+        }
+        return channel;
+    }
+
+    public void shutdownGracefully() {
+        if (group != null) {
+            group.shutdownGracefully();
+        }
     }
     
-    public abstract InetAddress getInetAddress();
+    public void connect(InetAddress address) {
+        if (bootstrap == null) {
+            throw new RuntimeException("called connect before init client");
+        }
+        try {
+            channel = bootstrap.connect(address.getInetHost(), address.getInetPort()).sync().channel();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public abstract void initChannel(SocketChannel ch);
 }

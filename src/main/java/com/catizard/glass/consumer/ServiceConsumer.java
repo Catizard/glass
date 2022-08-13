@@ -11,20 +11,13 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.util.concurrent.DefaultPromise;
 
 import java.lang.reflect.Proxy;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class ServiceConsumer {
     static class FetchClient extends Client {
-        private InetAddress ip;
-        private final int clientId = (RandomGenerator.random.nextInt(Integer.MAX_VALUE));
-        private int requestId = 0;
         public FetchClient(InetAddress ip) {
-            this.ip = ip;
-        }
-
-        @Override
-        public InetAddress getInetAddress() {
-            return ip;
+            super(ip);
         }
 
         @Override
@@ -34,39 +27,39 @@ public class ServiceConsumer {
             ch.pipeline().addLast(new FetchServiceResponseMessageHandler());
         }
         
-        public InetAddress sendFetchRequestMessage(String serviceName) throws InterruptedException {
-            requestId++;
+        public List<InetAddress> sendFetchRequestMessage(String serviceName) throws InterruptedException {
+            int clientId = getClientId(), requestId = getRequestId();
             RequestIdentify id = new RequestIdentify(clientId, requestId);
             FetchServiceRequestMessage message = new FetchServiceRequestMessage(serviceName, id);
             System.out.println("[Consumer] send fetch message [" + message + "]");
-            super.sendMessage(message);
+            getChannel().writeAndFlush(message);
             DefaultPromise<Object> promise = new DefaultPromise<>(getChannel().eventLoop());
             RequestPromiseChannel.waitCh.put(id, promise);
             promise.await(TimeUnit.SECONDS.toMillis(2));
             if (promise.isSuccess()) {
-                return (InetAddress) promise.getNow();
+                return (List<InetAddress>) promise.getNow();
             } else {
                 throw new RuntimeException(promise.cause());
             }
         }
     }
     static class RPCClient extends Client {
-        private InetAddress ip;
-        private final int clientId = RandomGenerator.random.nextInt(Integer.MAX_VALUE);
-        private int requestId = 0;
-
+        private InetAddress address;
         public RPCClient(InetAddress ip) {
-            this.ip = ip;
+            super(ip);
+            address = ip;
         }
         
         public <T> T getProxyService(InetAddress remoteAddress, Class<T> serviceClass) {
+            if (!remoteAddress.equals(address)) {
+                //reconnect to remote address
+                connect(remoteAddress);
+            }
             //send this to the assigned address
-            ip = remoteAddress;
             ClassLoader classLoader = serviceClass.getClassLoader();
             Class<?>[] interfaces = new Class[]{serviceClass};
             Object o = Proxy.newProxyInstance(classLoader, interfaces, ((proxy, method, args) -> {
-                //TODO send a message and fetch a result processes are the same, rewrite in base Client
-                ++requestId;
+                int clientId = getClientId(), requestId = getRequestId();
                 RequestIdentify id = new RequestIdentify(clientId, requestId);
                 RPCRequestMessage message = new RPCRequestMessage(
                         new RequestIdentify(clientId, requestId), 
@@ -77,7 +70,7 @@ public class ServiceConsumer {
                         args
                 );
                 System.out.println("[Consumer] send RPC message [" + message + "]");
-                super.sendMessage(message);
+                getChannel().writeAndFlush(message);
                 DefaultPromise<Object> promise = new DefaultPromise<>(getChannel().eventLoop());
                 RequestPromiseChannel.waitCh.put(id, promise);
                 promise.await();
@@ -88,11 +81,6 @@ public class ServiceConsumer {
                 }
             }));
             return (T)o;
-        }
-        
-        @Override
-        public InetAddress getInetAddress() {
-            return ip;
         }
         
         @Override
@@ -112,17 +100,18 @@ public class ServiceConsumer {
         this.rpcClient = new RPCClient(centerAddress);
     }
     
-    public InetAddress fetchService(String serviceName) throws InterruptedException {
+    public List<InetAddress> fetchService(String serviceName) throws InterruptedException {
         return fetchClient.sendFetchRequestMessage(serviceName);
     }
 
     public <T> T getProxyService(Class<T> clz) throws InterruptedException {
         String serviceName = clz.getAnnotation(RPCService.class).value();
-        InetAddress serviceAddress = fetchService(serviceName);
-        if (serviceAddress == null) {
+        List<InetAddress> serviceAddressList = fetchService(serviceName);
+        if (serviceAddressList == null || serviceAddressList.isEmpty()) {
             return null;
         }
-        return rpcClient.getProxyService(serviceAddress, clz);
+        //TODO need a balance rule to choose which remote should be sent
+        return rpcClient.getProxyService(serviceAddressList.get(0), clz);
     }
 
     public static void main(String[] args) throws InterruptedException {

@@ -15,15 +15,7 @@ public class RegisterServiceRequestMessageHandler extends SimpleChannelInboundHa
         try {
             String serviceName = msg.getServiceName();
             InetAddress serviceAddress = msg.getServiceAddress();
-            List<InetAddress> list = RegisterServiceCenter.registeredServices.get(serviceName);
-            if (list == null) {
-                list = new ArrayList<>();
-                list.add(serviceAddress);
-                RegisterServiceCenter.registeredServices.put(serviceName, list);
-            } else {
-                list.add(serviceAddress);
-            }
-            
+            RegisterServiceCenter.registerService(serviceName, serviceAddress);
             System.out.println("[Center] registered a new Service: name " + serviceName + " address " + serviceAddress);
         } catch (Exception e) {
             e.printStackTrace();
