@@ -1,5 +1,4 @@
 package com.catizard.glass.provider;
-
 import com.catizard.glass.message.MessageCodec;
 import com.catizard.glass.message.RegisterServiceRequestMessage;
 import com.catizard.glass.service.RPCService;
@@ -67,6 +66,13 @@ public class ServiceProvider {
         for (Class<?> clz : classList) {
             if (!clz.isInterface()) {
                 String serviceName = clz.getAnnotation(RPCService.class).value();
+                if ("".equals(serviceName)) {
+                    serviceName = clz.getName();
+                    //TODO make it configurable
+                    if(serviceName.endsWith("Impl")) {
+                        serviceName = serviceName.substring(0, serviceName.indexOf("Impl"));
+                    }
+                }
                 registerService(serviceName, listenAddress);
                 try {
                     ServicesFactory.setService(serviceName, clz.newInstance());

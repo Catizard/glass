@@ -1,6 +1,6 @@
 package com.catizard.glass.service;
 
-@RPCService("LogService")
+@RPCService
 public class LogServiceImpl implements LogService {
     //this class is only for testing AnnotationScanner
     @Override

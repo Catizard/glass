@@ -5,7 +5,7 @@ import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 
-@RPCService("HelloService")
+@RPCService
 public class HelloServiceImpl implements HelloService {
     @Override
     public String sayHello(String message) {

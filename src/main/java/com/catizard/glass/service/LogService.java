@@ -1,6 +1,6 @@
 package com.catizard.glass.service;
 
-@RPCService("LogService")
+@RPCService("")
 public interface LogService {
     void log();    
 }
