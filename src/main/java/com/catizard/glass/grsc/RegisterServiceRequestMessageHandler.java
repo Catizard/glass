@@ -1,12 +1,9 @@
-package com.catizard.glass.center;
+package com.catizard.glass.grsc;
 
 import com.catizard.glass.message.RegisterServiceRequestMessage;
 import com.catizard.glass.utils.InetAddress;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class RegisterServiceRequestMessageHandler extends SimpleChannelInboundHandler<RegisterServiceRequestMessage> {
     @Override

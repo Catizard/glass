@@ -1,4 +1,4 @@
-package com.catizard.glass.center;
+package com.catizard.glass.grsc;
 
 import com.catizard.glass.message.FetchServiceRequestMessage;
 import com.catizard.glass.message.FetchServiceResponseMessage;
