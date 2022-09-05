@@ -1,7 +1,7 @@
 package com.catizard.glass.network.cluster.interfaces;
 
 import com.catizard.glass.network.client.interfaces.Client;
-import com.catizard.glass.network.server.interfaces.Server;
+import com.catizard.glass.network.client.server.interfaces.Server;
 import com.catizard.glass.network.utils.message.Message;
 import com.catizard.glass.utils.InetAddress;
 import io.netty.util.concurrent.Promise;

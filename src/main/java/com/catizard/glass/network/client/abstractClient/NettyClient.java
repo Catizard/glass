@@ -5,64 +5,61 @@ import com.catizard.glass.network.utils.message.Message;
 import com.catizard.glass.utils.InetAddress;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.DefaultPromise;
+import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Promise;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 public abstract class NettyClient implements Client {
     private Bootstrap bootstrap;
     private Channel channel;
+    private InetAddress cachedAddress;
 
-    @Override
-    public void connectTo(InetAddress ip) throws Exception {
-        channel = bootstrap.connect(ip.getInetHost(), ip.getInetPort()).sync().channel();
+    public void configureChannelType(Class<? extends Channel> clz) {
+        bootstrap.channel(clz);
     }
-
-    public void beforeSetup() {
-        
+    
+    public void configureChannelHandler(ChannelInitializer<? extends Channel> initializer) {
+        bootstrap.handler(initializer);
     }
-    public void afterSetup(Bootstrap bootstrap) {
-        
-    }
+    
     public void setupClient() {
-        beforeSetup();
         NioEventLoopGroup group = new NioEventLoopGroup();
         bootstrap = new Bootstrap();
         bootstrap.group(group);
-        afterSetup(bootstrap);
     }
 
     @Override
-    public Object call(Message param) throws Exception {
-        Promise<Object> promise = callAsync(param);
-        promise.await();
-        if (promise.isSuccess()) {
-            return promise.getNow();
-        } else {
-            throw new RuntimeException(promise.cause());
+    public final void connectTo(InetAddress ip) throws Exception {
+        if(ip != null) {
+            if (!ip.equals(cachedAddress)) {
+                cachedAddress = ip;
+            }
+
+            //TODO how can we know if a channel is kicked down?
+            if (channel == null) {
+                channel = bootstrap.connect(ip.getInetHost(), ip.getInetPort()).sync().channel();
+            }    
         }
     }
-
-    @Override
-    public Object call(InetAddress ip, Message param) throws Exception {
-        //refresh the channel
-        connectTo(ip);
-        return call(param);
+    
+    public void sendMessage(Message message) throws Exception {
+        if (channel == null) {
+            if (cachedAddress == null) {
+                throw new Exception("client has no target");
+            }
+            channel = bootstrap.connect(cachedAddress.getInetHost(), cachedAddress.getInetPort()).sync().channel();
+            channel.writeAndFlush(message);
+        }
     }
-
-    @Override
-    public Promise<Object> callAsync(Message param) throws Exception {
-        return doCallAsync(param);
-    }
-
-    public abstract Promise<Object> doCallAsync(Message param);
-
-    @Override
-    public Promise<Object> callAsync(InetAddress ip, Message param) throws Exception {
-        connectTo(ip);
-        return callAsync(param);
+    
+    public EventExecutor getWorker() {
+        return channel.eventLoop();
     }
 }
