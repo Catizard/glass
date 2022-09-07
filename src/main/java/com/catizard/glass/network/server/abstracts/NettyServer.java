@@ -26,11 +26,11 @@ public abstract class NettyServer implements Server {
     }
 
     @Override
-    public final void listenTo(InetAddress ip) {
+    public void listenTo(InetAddress ip) {
         serverBootstrap.bind(ip.getInetHost(), ip.getInetPort());
     }
     
-    public final void listenTo(int port) {
+    public void listenTo(int port) {
         serverBootstrap.bind(port);
     }
 }

@@ -8,13 +8,17 @@ import com.catizard.glass.utils.InetAddress;
 import java.util.List;
 
 public abstract class AbstractSingleRegisterCenter implements RegisterServiceCenter {
-    private final Server server;
-    private final ServicesCollection services;
-    
-    public AbstractSingleRegisterCenter(Server server, ServicesCollection services) {
+    private Server server;
+    private ServicesCollection services;
+
+    public void setServer(Server server) {
         this.server = server;
+    }
+
+    public void setServices(ServicesCollection services) {
         this.services = services;
     }
+
     @Override
     public void listenTo(InetAddress ip) {
         server.listenTo(ip);
