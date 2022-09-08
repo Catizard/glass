@@ -41,7 +41,7 @@ public abstract class abstractClusterNode implements ClusterNode {
     }
 
     @Override
-    public void listenTo(InetAddress ip) {
-        server.listenTo(ip);
+    public void listenTo(int port) {
+        server.listenTo(port);
     }
 }
