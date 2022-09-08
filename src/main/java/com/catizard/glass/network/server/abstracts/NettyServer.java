@@ -24,13 +24,9 @@ public abstract class NettyServer implements Server {
         NioEventLoopGroup worker = new NioEventLoopGroup();
         serverBootstrap.group(boss, worker);
     }
-
-    @Override
-    public final void listenTo(InetAddress ip) {
-        serverBootstrap.bind(ip.getInetHost(), ip.getInetPort());
-    }
     
-    public final void listenTo(int port) {
+    @Override
+    public void listenTo(int port) {
         serverBootstrap.bind(port);
     }
 }
