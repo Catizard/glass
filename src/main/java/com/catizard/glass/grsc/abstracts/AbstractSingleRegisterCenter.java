@@ -20,8 +20,8 @@ public abstract class AbstractSingleRegisterCenter implements RegisterServiceCen
     }
 
     @Override
-    public void listenTo(InetAddress ip) {
-        server.listenTo(ip);
+    public void listenTo(int port) {
+        server.listenTo(port);
     }
 
     @Override

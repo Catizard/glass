@@ -16,12 +16,13 @@ public class DefaultSingleNettyRegisterServiceCenter extends AbstractSingleRegis
     public DefaultSingleNettyRegisterServiceCenter(int port) {
         NettyServer server = new DefaultRunnableNettyServer();
         ServicesCollection servicesCollection = MappedServices.initMappedServices(new HashMap<>());
+        server.setupServer();
         server.configureChannelType(NioServerSocketChannel.class);
-        server.configureChannelHandler(new ChannelInitializer<Channel>() {
+        server.configureChannelHandler(new ChannelInitializer<Channel>() { 
             @Override
             protected void initChannel(Channel ch) throws Exception {
-                ch.pipeline().addLast(new FetchServiceRequestMessageHandler());
-                ch.pipeline().addLast(new RegisterServiceRequestMessageHandler());
+                ch.pipeline().addLast(new FetchServiceRequestMessageHandler(servicesCollection));
+                ch.pipeline().addLast(new RegisterServiceRequestMessageHandler(servicesCollection));
             }
         });
         server.listenTo(port);
