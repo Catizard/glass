@@ -1,11 +1,20 @@
 package com.catizard.glass.consumer;
 
+
 import com.catizard.glass.message.MessageCodec;
 import com.catizard.glass.message.RPCRequestMessage;
 import com.catizard.glass.service.HelloService;
 import com.catizard.glass.service.RPCService;
-import com.catizard.glass.utils.*;
+import com.catizard.glass.utils.InetAddress;
+import com.catizard.glass.utils.RandomGenerator;
+import com.catizard.glass.utils.RequestIdentify;
+import com.catizard.glass.utils.RequestPromiseChannel;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.util.concurrent.DefaultPromise;
 import org.apache.curator.framework.CuratorFramework;
@@ -16,29 +25,37 @@ import java.lang.reflect.Proxy;
 import java.util.List;
 
 public class ServiceConsumer {
-    static class RPCClient extends Client {
+    static class RPCClient {
         private InetAddress address;
+        private Bootstrap bootstrap = new Bootstrap();
+        private NioEventLoopGroup group = new NioEventLoopGroup();
+        private int clientId = RandomGenerator.random.nextInt(Integer.MAX_VALUE);
+        private int requestId = 0;
+        
         public RPCClient(InetAddress ip) {
-            super(ip);
             address = ip;
+            try {
+                bootstrap.group(group);
+                bootstrap.channel(NioSocketChannel.class);
+                bootstrap.handler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    protected void initChannel(SocketChannel ch) throws Exception {
+                        ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(1024, 4, 4, 0, 0));
+                        ch.pipeline().addLast(new MessageCodec());
+                        ch.pipeline().addLast(new RPCResponseMessageHandler());
+                    }
+                });
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
         
         public <T> T getProxyService(InetAddress remoteAddress, Class<T> serviceClass) {
-            if (!remoteAddress.equals(address)) {
-                //reconnect to remote address
-                try {
-                    connect(remoteAddress);
-                } catch (InterruptedException e) {
-                    //TODO should send a message to center
-                    System.out.println("cannot connect to remote address");
-                    throw new RuntimeException(e);
-                }
-            }
             //send this to the assigned address
             ClassLoader classLoader = serviceClass.getClassLoader();
             Class<?>[] interfaces = new Class[]{serviceClass};
             Object o = Proxy.newProxyInstance(classLoader, interfaces, ((proxy, method, args) -> {
-                int clientId = getClientId(), requestId = getRequestId();
+                requestId++;
                 RequestIdentify id = new RequestIdentify(clientId, requestId);
                 //TODO make it configurable
                 String serviceName = serviceClass.getAnnotation(RPCService.class).value();
@@ -56,8 +73,11 @@ public class ServiceConsumer {
                         args
                 );
                 System.out.println("[Consumer] send RPC message [" + message + "]");
-                getChannel().writeAndFlush(message);
-                DefaultPromise<Object> promise = new DefaultPromise<>(getChannel().eventLoop());
+                /*TODO actually I think send request message is a async op
+                    so should we use UDP instead of TCP? because there needs to wait tcp sync*/
+                Channel channel = bootstrap.connect(remoteAddress.getInetHost(), remoteAddress.getInetPort()).sync().channel();
+                channel.writeAndFlush(message);
+                DefaultPromise<Object> promise = new DefaultPromise<>(channel.eventLoop());
                 RequestPromiseChannel.waitCh.put(id, promise);
                 promise.await();
                 if (promise.isSuccess()) {
@@ -67,13 +87,6 @@ public class ServiceConsumer {
                 }
             }));
             return (T)o;
-        }
-        
-        @Override
-        public void initChannel(SocketChannel ch) {
-            ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(1024, 4, 4, 0, 0));
-            ch.pipeline().addLast(new MessageCodec());
-            ch.pipeline().addLast(new RPCResponseMessageHandler());
         }
     }
     private InetAddress centerAddress;
