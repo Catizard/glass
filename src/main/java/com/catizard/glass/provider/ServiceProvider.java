@@ -9,35 +9,26 @@ import com.catizard.glass.utils.Server;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.zookeeper.CreateMode;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class ServiceProvider {
-    static class RegisterClient extends Client {
-        public RegisterClient(InetAddress address) {
-            super(address);
-        }
-
-        @Override
-        public void initChannel(SocketChannel ch) {
-            ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(1024, 4, 4, 0, 0));
-            ch.pipeline().addLast(new MessageCodec());
-        }
-
-        public void sendRegisterMessage(String serviceName, InetAddress serviceAddress) {
-            RegisterServiceRequestMessage message = new RegisterServiceRequestMessage(serviceName, serviceAddress.getInetHost(), serviceAddress.getInetPort());
-            getChannel().writeAndFlush(message);
-        }
-    }
+    private CuratorFramework zkCli;
     private InetAddress centerAddress;
     private InetAddress listenAddress;
-    private final RegisterClient register;
     private Thread server;
     
     public ServiceProvider(InetAddress listenAddress, InetAddress centerAddress, String... packNames) {
         this.listenAddress = listenAddress;
         this.centerAddress = centerAddress;
-        this.register = new RegisterClient(centerAddress);
+        this.zkCli = CuratorFrameworkFactory.newClient(centerAddress.toString(), 
+                new ExponentialBackoffRetry(1000, 3));
+        this.zkCli.start();
         for (String packName : packNames) {
             scanAndRegister(listenAddress, packName);
         }
@@ -73,9 +64,26 @@ public class ServiceProvider {
                         serviceName = serviceName.substring(0, serviceName.indexOf("Impl"));
                     }
                 }
-                registerService(serviceName, listenAddress);
+                System.out.println(serviceName);
+
+                String servicePath = serviceName.replace('.', '/');
+                servicePath = "/" + servicePath + "/server";
+                System.out.println(servicePath);
+
+                try {
+                    System.out.println(listenAddress.toString());
+                    zkCli.create().creatingParentsIfNeeded().
+                            withMode(CreateMode.EPHEMERAL_SEQUENTIAL).
+                            forPath(servicePath, listenAddress.toString().getBytes(StandardCharsets.UTF_8));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                String[] split = serviceName.split("\\.");
+                serviceName = split[split.length - 1];
                 try {
                     ServicesFactory.setService(serviceName, clz.newInstance());
+                    System.out.println("set " + serviceName);
                 } catch (InstantiationException | IllegalAccessException e) {
                     throw new RuntimeException(e);
                 }
@@ -86,11 +94,7 @@ public class ServiceProvider {
     public void close() {
         this.server.interrupt();
     }
-
-    public void registerService(String serviceName, InetAddress serviceAddress) {
-        register.sendRegisterMessage(serviceName, serviceAddress);
-    }
-
+    
     private static class ProviderServer extends Server {
         public ProviderServer(InetAddress address, String name) {
             super(address, name);
@@ -107,7 +111,7 @@ public class ServiceProvider {
     
     public static void main(String[] args) throws InstantiationException, IllegalAccessException {
         InetAddress selfAddress = new InetAddress("localhost", 9090);
-        InetAddress centerAddress = new InetAddress("localhost", 8080);
+        InetAddress centerAddress = new InetAddress("localhost", 2181);
         //run server listen to port 9090
         
         ServiceProvider serviceProvider = new ServiceProvider(selfAddress, centerAddress, "com.catizard.glass.service");

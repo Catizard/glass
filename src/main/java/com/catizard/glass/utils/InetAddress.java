@@ -38,9 +38,6 @@ public class InetAddress {
 
     @Override
     public String toString() {
-        return "InetAddress{" +
-                "inetHost='" + inetHost + '\'' +
-                ", inetPort=" + inetPort +
-                '}';
+        return inetHost + ":" + inetPort;
     }
 }

@@ -1,7 +1,6 @@
 package com.catizard.glass.service;
 
-
-@RPCService("")
+@RPCService
 public interface HelloService {
     public String sayHello(String message);
 }
