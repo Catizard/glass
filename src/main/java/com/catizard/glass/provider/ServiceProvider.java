@@ -3,7 +3,11 @@ import com.catizard.glass.message.MessageCodec;
 import com.catizard.glass.service.RPCService;
 import com.catizard.glass.utils.AnnotationScanner;
 import com.catizard.glass.utils.InetAddress;
-import com.catizard.glass.utils.Server;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import org.apache.curator.framework.CuratorFramework;
@@ -18,7 +22,7 @@ public class ServiceProvider {
     private CuratorFramework zkCli;
     private InetAddress centerAddress;
     private InetAddress listenAddress;
-    private Thread server;
+    private Thread threadServer;
     
     public ServiceProvider(InetAddress listenAddress, InetAddress centerAddress, String... packNames) {
         this.listenAddress = listenAddress;
@@ -29,8 +33,8 @@ public class ServiceProvider {
         for (String packName : packNames) {
             scanAndRegister(listenAddress, packName);
         }
-        this.server = new Thread(new ProviderServer(listenAddress, "provider server"));
-        this.server.start();
+        this.threadServer = new Thread(new ProviderServer(listenAddress));
+        this.threadServer.start();
     }
 
     public InetAddress getCenterAddress() {
@@ -89,20 +93,42 @@ public class ServiceProvider {
     }
     
     public void close() {
-        this.server.interrupt();
+        this.threadServer.interrupt();
     }
     
-    private static class ProviderServer extends Server {
-        public ProviderServer(InetAddress address, String name) {
-            super(address, name);
+    private static class ProviderServer implements Runnable {
+        private InetAddress listenAddress;
+        private ServerBootstrap serverBootstrap = new ServerBootstrap();
+        private NioEventLoopGroup boss = new NioEventLoopGroup();
+        private NioEventLoopGroup worker = new NioEventLoopGroup();
+        public ProviderServer(InetAddress listenAddress) {
+            this.listenAddress = listenAddress;
+            serverBootstrap.group(boss, worker);
+            serverBootstrap.channel(NioServerSocketChannel.class);
+            serverBootstrap.childHandler(new ChannelInitializer<NioSocketChannel>() {
+                @Override
+                protected void initChannel(NioSocketChannel ch) throws Exception {
+                    ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(1024, 4, 4, 0, 0));
+                    ch.pipeline().addLast(new MessageCodec());
+                    ch.pipeline().addLast(new RPCRequestMessageHandler());
+                    ch.pipeline().addLast(new HeartbeatRequestMessageHandler());
+                }
+            });
+        }
+
+        public void close() {
+            boss.shutdownGracefully();
+            worker.shutdownGracefully();
         }
 
         @Override
-        public void initChannel(NioSocketChannel ch) throws Exception {
-            ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(1024, 4, 4, 0, 0));
-            ch.pipeline().addLast(new MessageCodec());
-            ch.pipeline().addLast(new RPCRequestMessageHandler());
-            ch.pipeline().addLast(new HeartbeatRequestMessageHandler());
+        public void run() {
+            try {
+                Channel channel = serverBootstrap.bind(listenAddress.getInetHost(), listenAddress.getInetPort()).sync().channel();
+                channel.closeFuture().sync();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
     
