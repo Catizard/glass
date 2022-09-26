@@ -3,12 +3,14 @@ package com.catizard.glass.center.utils.wrappers;
 public class DefaultServiceNameFactory implements ServiceNameFactory {
     @Override
     public String ImplementationNameToServiceName(String rawName) {
-        return null;
+        rawName = rawName.substring(0, rawName.indexOf("Impl"));
+        rawName = rawName.replace('.', '/');
+        return rawName;
     }
 
     @Override
     public String InterfaceNameToServiceName(String rawName) {
-        return null;
+        rawName = rawName.replace('.', '/');
+        return rawName;
     }
-    
 }

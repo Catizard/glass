@@ -1,7 +1,7 @@
 package com.catizard.glass.provider;
 import com.catizard.glass.center.RegisterCenterClient;
 import com.catizard.glass.center.balance.Balance;
-import com.catizard.glass.center.balance.CircleBalance;
+import com.catizard.glass.center.balance.DefaultCircleBalance;
 import com.catizard.glass.center.utils.wrappers.DefaultServiceNameFactory;
 import com.catizard.glass.center.utils.wrappers.DefaultServicePathFactory;
 import com.catizard.glass.center.utils.wrappers.ServiceNameFactory;
@@ -17,12 +17,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.zookeeper.CreateMode;
 
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class ServiceProvider {
@@ -74,7 +69,7 @@ public class ServiceProvider {
     
                 //TODO what if rcc failed?
                 //send it to zk server
-                rcc.provideService(serviceName, listenAddress.toString());
+            rcc.provideService(serviceName, listenAddress.toString());
                 
                 //register in ServicesFactory
                 try {
@@ -89,9 +84,10 @@ public class ServiceProvider {
 
     private String constructServiceName(Class<?> clz) {
         String serviceName = clz.getAnnotation(RPCService.class).value();
-        if ("".equals(serviceName)) {
+        if (serviceName == null || "".equals(serviceName)) {
             serviceName = clz.getName();
             //TODO make it configurable
+            //TODO I dont think this is meaningful
             if(serviceName.endsWith("Impl")) {
                 serviceName = nameFactory.ImplementationNameToServiceName(serviceName);
             }
@@ -147,7 +143,7 @@ public class ServiceProvider {
         ServiceProvider serviceProvider = new ServiceProvider(
                 selfAddress, 
                 centerAddress,
-                new CircleBalance(),
+                new DefaultCircleBalance(),
                 new DefaultServiceNameFactory(),
                 new DefaultServicePathFactory(),
                 "com.catizard.glass.service"

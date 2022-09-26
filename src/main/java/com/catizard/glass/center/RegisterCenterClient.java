@@ -2,14 +2,12 @@ package com.catizard.glass.center;
 
 import com.catizard.glass.center.balance.Balance;
 import com.catizard.glass.center.utils.wrappers.ServicePathFactory;
-import com.catizard.glass.utils.InetAddress;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.CreateMode;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 
 public class RegisterCenterClient {
@@ -41,10 +39,12 @@ public class RegisterCenterClient {
     public String fetchService(String serviceName) {
         balance.processBeforeFetch();
         //fetch data
-        List<String> list = null;
+        List<String> rawList = null;
         try {
-            list = zkCli.getChildren().forPath(serviceName);
-            return balance.processAfterFetch(list);
+            String servicePath = pathFactory.ServiceNameToServicePath(serviceName);
+            String parentPath = servicePath.substring(0, servicePath.lastIndexOf("/"));
+            rawList = zkCli.getChildren().forPath(parentPath);
+            return balance.processAfterFetch(parentPath, rawList);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

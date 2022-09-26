@@ -3,7 +3,7 @@ package com.catizard.glass.consumer;
 
 import com.catizard.glass.center.RegisterCenterClient;
 import com.catizard.glass.center.balance.Balance;
-import com.catizard.glass.center.balance.CircleBalance;
+import com.catizard.glass.center.balance.DefaultCircleBalance;
 import com.catizard.glass.center.utils.wrappers.DefaultServiceNameFactory;
 import com.catizard.glass.center.utils.wrappers.DefaultServicePathFactory;
 import com.catizard.glass.center.utils.wrappers.ServiceNameFactory;
@@ -25,7 +25,7 @@ import io.netty.util.concurrent.DefaultPromise;
 import java.lang.reflect.Proxy;
 
 public class ServiceConsumer {
-    static class RPCClient {
+    class RPCClient {
         private InetAddress address;
         private Bootstrap bootstrap = new Bootstrap();
         private NioEventLoopGroup group = new NioEventLoopGroup();
@@ -60,10 +60,9 @@ public class ServiceConsumer {
                 //TODO make it configurable
                 String serviceName = serviceClass.getAnnotation(RPCService.class).value();
                 if (serviceName == null || serviceName.equals("")) {
-                    serviceName = serviceClass.getName();
-                    String[] split = serviceName.split("\\.");
-                    serviceName = split[split.length - 1];
+                    serviceName = nameFactory.InterfaceNameToServiceName(serviceClass.getName());
                 }
+                
                 RPCRequestMessage message = new RPCRequestMessage(
                         new RequestIdentify(clientId, requestId), 
                         serviceName,
@@ -104,7 +103,7 @@ public class ServiceConsumer {
     public <T> T getProxyService(Class<T> clz) throws InterruptedException {
         String serviceName = clz.getAnnotation(RPCService.class).value();
         if (serviceName == null || serviceName.equals("")) {
-            serviceName = nameFactory.InterfaceNameToServiceName(serviceName);
+            serviceName = nameFactory.InterfaceNameToServiceName(clz.getName());
         }
 
         //fetch address
@@ -122,7 +121,7 @@ public class ServiceConsumer {
     public static void main(String[] args) throws Exception {
         ServiceConsumer serviceConsumer = new ServiceConsumer(
                 new InetAddress("localhost", 8080), 
-                new CircleBalance(),
+                new DefaultCircleBalance(),
                 new DefaultServiceNameFactory(),
                 new DefaultServicePathFactory());
         HelloService helloservice = serviceConsumer.getProxyService(HelloService.class);

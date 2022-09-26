@@ -6,5 +6,5 @@ public interface Balance {
     String processBeforeProvide(String data);
     void processAfterProvide();
     void processBeforeFetch();
-    String processAfterFetch(List<String> list);
+    String processAfterFetch(String parentPath, List<String> rawList);
 }
