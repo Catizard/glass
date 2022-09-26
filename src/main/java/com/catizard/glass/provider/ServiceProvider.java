@@ -1,4 +1,11 @@
 package com.catizard.glass.provider;
+import com.catizard.glass.center.RegisterCenterClient;
+import com.catizard.glass.center.balance.Balance;
+import com.catizard.glass.center.balance.CircleBalance;
+import com.catizard.glass.center.utils.wrappers.DefaultServiceNameFactory;
+import com.catizard.glass.center.utils.wrappers.DefaultServicePathFactory;
+import com.catizard.glass.center.utils.wrappers.ServiceNameFactory;
+import com.catizard.glass.center.utils.wrappers.ServicePathFactory;
 import com.catizard.glass.message.MessageCodec;
 import com.catizard.glass.service.RPCService;
 import com.catizard.glass.utils.AnnotationScanner;
@@ -19,17 +26,23 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class ServiceProvider {
-    private CuratorFramework zkCli;
     private InetAddress centerAddress;
     private InetAddress listenAddress;
     private Thread threadServer;
-    
-    public ServiceProvider(InetAddress listenAddress, InetAddress centerAddress, String... packNames) {
+    private RegisterCenterClient rcc;
+    private ServiceNameFactory nameFactory;
+    public ServiceProvider(
+            InetAddress listenAddress, 
+            InetAddress centerAddress, 
+            Balance balance,
+            ServiceNameFactory nameFactory,
+            ServicePathFactory pathFactory,
+            String... packNames
+            ) {
         this.listenAddress = listenAddress;
         this.centerAddress = centerAddress;
-        this.zkCli = CuratorFrameworkFactory.newClient(centerAddress.toString(), 
-                new ExponentialBackoffRetry(1000, 3));
-        this.zkCli.start();
+        this.rcc = new RegisterCenterClient(balance, pathFactory);
+        this.nameFactory = nameFactory;
         for (String packName : packNames) {
             scanAndRegister(listenAddress, packName);
         }
@@ -57,31 +70,13 @@ public class ServiceProvider {
         List<Class<?>> classList = AnnotationScanner.scan(packName, RPCService.class);
         for (Class<?> clz : classList) {
             if (!clz.isInterface()) {
-                String serviceName = clz.getAnnotation(RPCService.class).value();
-                if ("".equals(serviceName)) {
-                    serviceName = clz.getName();
-                    //TODO make it configurable
-                    if(serviceName.endsWith("Impl")) {
-                        serviceName = serviceName.substring(0, serviceName.indexOf("Impl"));
-                    }
-                }
-                System.out.println(serviceName);
-
-                String servicePath = serviceName.replace('.', '/');
-                servicePath = "/" + servicePath + "/server";
-                System.out.println(servicePath);
-
-                try {
-                    System.out.println(listenAddress.toString());
-                    zkCli.create().creatingParentsIfNeeded().
-                            withMode(CreateMode.EPHEMERAL_SEQUENTIAL).
-                            forPath(servicePath, listenAddress.toString().getBytes(StandardCharsets.UTF_8));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-                String[] split = serviceName.split("\\.");
-                serviceName = split[split.length - 1];
+                String serviceName = constructServiceName(clz);
+    
+                //TODO what if rcc failed?
+                //send it to zk server
+                rcc.provideService(serviceName, listenAddress.toString());
+                
+                //register in ServicesFactory
                 try {
                     ServicesFactory.setService(serviceName, clz.newInstance());
                     System.out.println("set " + serviceName);
@@ -91,7 +86,19 @@ public class ServiceProvider {
             }
         }
     }
-    
+
+    private String constructServiceName(Class<?> clz) {
+        String serviceName = clz.getAnnotation(RPCService.class).value();
+        if ("".equals(serviceName)) {
+            serviceName = clz.getName();
+            //TODO make it configurable
+            if(serviceName.endsWith("Impl")) {
+                serviceName = nameFactory.ImplementationNameToServiceName(serviceName);
+            }
+        }
+        return serviceName;
+    }
+
     public void close() {
         this.threadServer.interrupt();
     }
@@ -137,7 +144,14 @@ public class ServiceProvider {
         InetAddress centerAddress = new InetAddress("localhost", 2181);
         //run server listen to port 9090
         
-        ServiceProvider serviceProvider = new ServiceProvider(selfAddress, centerAddress, "com.catizard.glass.service");
+        ServiceProvider serviceProvider = new ServiceProvider(
+                selfAddress, 
+                centerAddress,
+                new CircleBalance(),
+                new DefaultServiceNameFactory(),
+                new DefaultServicePathFactory(),
+                "com.catizard.glass.service"
+                );
 //        serviceProvider.close();
     }
 }
