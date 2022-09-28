@@ -1,6 +1,6 @@
 package com.catizard.glass.center;
 
-import com.catizard.glass.center.balance.Balance;
+import com.catizard.glass.center.utils.balance.Balance;
 import com.catizard.glass.center.utils.wrappers.ServicePathFactory;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;

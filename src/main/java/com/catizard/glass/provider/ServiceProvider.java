@@ -1,7 +1,7 @@
 package com.catizard.glass.provider;
 import com.catizard.glass.center.RegisterCenterClient;
-import com.catizard.glass.center.balance.Balance;
-import com.catizard.glass.center.balance.DefaultCircleBalance;
+import com.catizard.glass.center.utils.balance.Balance;
+import com.catizard.glass.center.utils.balance.DefaultCircleBalance;
 import com.catizard.glass.center.utils.wrappers.DefaultServiceNameFactory;
 import com.catizard.glass.center.utils.wrappers.DefaultServicePathFactory;
 import com.catizard.glass.center.utils.wrappers.ServiceNameFactory;
@@ -69,7 +69,7 @@ public class ServiceProvider {
     
                 //TODO what if rcc failed?
                 //send it to zk server
-            rcc.provideService(serviceName, listenAddress.toString());
+                rcc.provideService(serviceName, listenAddress.toString());
                 
                 //register in ServicesFactory
                 try {

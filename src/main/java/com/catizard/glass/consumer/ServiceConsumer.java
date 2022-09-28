@@ -2,8 +2,8 @@ package com.catizard.glass.consumer;
 
 
 import com.catizard.glass.center.RegisterCenterClient;
-import com.catizard.glass.center.balance.Balance;
-import com.catizard.glass.center.balance.DefaultCircleBalance;
+import com.catizard.glass.center.utils.balance.Balance;
+import com.catizard.glass.center.utils.balance.DefaultCircleBalance;
 import com.catizard.glass.center.utils.wrappers.DefaultServiceNameFactory;
 import com.catizard.glass.center.utils.wrappers.DefaultServicePathFactory;
 import com.catizard.glass.center.utils.wrappers.ServiceNameFactory;

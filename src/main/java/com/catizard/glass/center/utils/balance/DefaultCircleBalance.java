@@ -1,4 +1,4 @@
-package com.catizard.glass.center.balance;
+package com.catizard.glass.center.utils.balance;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
